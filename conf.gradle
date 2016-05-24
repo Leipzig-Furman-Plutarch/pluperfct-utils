@@ -1,0 +1,42 @@
+project.ext {
+
+    // URN of folio page or papyrus column you want to verify:
+    folio = ""
+
+
+    // Settings for hocuspocus CTS repository:
+    textInventory = "/cite/dls/plutarch-texts/inventory.xml"
+    citationConfig = "/cite/dls/plutarch-texts/citationconfig.xml"
+    textArchive = "/cite/dls/plutarch-texts/xml"
+
+
+    // Lists of index files to use in DSE verification:
+    folioToImage = ""
+    textToImage = ""
+    textToFolio = ""
+
+    // Scholia Collections to use in automatically 
+    // generating DSE indices for scholia:
+    scholiaInventories = ""
+    
+
+
+    // Collection with systematic, random set of HMT
+    // paleographic observations:
+    //paleo = "collections/paleography.csv"
+
+
+    // settings for concordion testing    
+    mdSrc = "specs/md" 	       
+
+    htmlPreface = """                                                           
+<html xmlns:concordion="http://www.concordion.org/2007/concordion">             
+<body>                                                                          
+    """
+    htmlEnd = "</body>\n</html>\n"
+
+
+    tokenMap = [    "openex": "<div class='example'>", "closeex" : "</div>"]
+
+
+}
