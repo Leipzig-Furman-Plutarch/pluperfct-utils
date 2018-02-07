@@ -141,6 +141,7 @@ Notes for the Future:
 */
 def printPlutarchExemplars(pcts:List[(List[(String,String,Int)],Int)]):Unit = {
 	val pw = new PrintWriter(new File("resources/cts-cex.txt" ))
+	pw.write("****\nPlaceholder Data! Not a real CEX file!\n***\n")
 	var levelOne:Int = 0
 	var levelTwo:Int = 0
 	var textContent:String = ""
