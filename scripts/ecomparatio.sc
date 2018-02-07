@@ -39,7 +39,23 @@ val doc: Json = parse(jsString).getOrElse(Json.Null)
 // We need a cursor to get stuff
 val cursor: HCursor = doc.hcursor
 
-// Sort out our texts
+// Get text catalog
+val textNamesEither = cursor.downField("textnames").as[List[Json]]
+val textNamesListJson:List[Json] = eitherListToListJson(textNamesEither)
+val textNamesList:List[List[String]] = textNamesListJson.map(tn => {
+	val textNameEither = tn.as[List[String]]
+	eitherListToListString(textNameEither)
+})
+var tempCexCatalog:String = s"${cexHeader}\n\n${cexCatalogHeader}\n\n"
+val tempCexCatalogEntries:String = textNamesList.map( tn => {
+	 val versionComponentString:String = tn(1).replace(" ","")(0)
+	 val versionUrn:CtsUrn = CtsUrn(s"${textUrnBase}:${versionComponentString}:")
+	 val versionCitationScheme:String = citationScheme
+	 val exemplarUrn:CtsUrn = CtsUrn(s"${versionUrn}.diffTokens:")
+	 val exemplarCitationScheme:String = s"${versionCitationScheme}/token"
+})
+
+// Get text tokens
 val allTextListEither = cursor.downField("alltexts").as[List[Json]]
 val allTextListJson:List[Json] = eitherListToListJson(allTextListEither)
 val allTextList:List[(List[(String)],Int)] = allTextListJson.map(atl => {
@@ -149,5 +165,31 @@ def jsonToCex(doc:List[Json]):String = {
 	}
 */
 
+
+// String Values
+
+val textUrnBase:String = "urn:cts:greekLit:tlg0007.tlg012"
+val citationScheme:String = "section/sentence"
+
+val groupName:String = "Plutarch"
+val workName:String = "Pericles"
+
+val cexHeader:String = """
+// A library demonstrating eComparatio data in CITE/CEX format
+// Plutarch, Life of Perices, Greek.
+
+#!cexversion
+3.0
+
+#!citelibrary
+name#demo
+urn#urn:cite2:cex:fufolio.2018_1:ecomparatioDemo
+license#CC Share Alike.  For details, see more info.
+"""
+
+val cexCatalogHeader:String = """
+#!ctscatalog
+urn#citationScheme#groupName#workTitle#versionLabel#exemplarLabel#online#lang
+"""
 
 

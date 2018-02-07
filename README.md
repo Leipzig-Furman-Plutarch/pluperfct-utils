@@ -12,10 +12,12 @@ Utility library and scripts for editorial work specific to the demonstration wor
 
 `scripts/ecomparatio.sc`: Experimental Scala script for parsing eComparatio JSON into citable texts. Run with:
 
+~~~
    $ sbt
    $ ++2.12.3
    $ crossedJVM/console
    $ :load scripts/ecomparatio.sc
+~~~
 
 Look for output in `resources/`.
 
