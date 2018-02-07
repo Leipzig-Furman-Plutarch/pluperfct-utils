@@ -79,6 +79,14 @@ val pseudoCts:List[(List[(String,String,Int)],Int)] = {
 	})
 }
 
+/* 
+
+Notes for the Future:
+
+	- This blindly captures a citation scheme specific to this JSON
+	- Sections look like "1.", subsections look like "[1]"
+
+*/
 def printPlutarchExemplars(pcts:List[(List[(String,String,Int)],Int)]):Unit = {
 	val pw = new PrintWriter(new File("resources/cts-cex.txt" ))
 	var levelOne:Int = 0
@@ -147,26 +155,12 @@ def printPlutarchExemplars(pcts:List[(List[(String,String,Int)],Int)]):Unit = {
 printPlutarchExemplars(pseudoCts)
 
 
+/* 
 
+Eventually Parameterize These Values!
+(Data that is not in the JSON, but probably should be.)
 
-//val textNameListEither = cursor.downField("textnames").as[List[Json]]
-//val comparatioListEither = cursor.downField("comparatio").as[List[Json]]
-
-
-/*
-def jsonToCex(doc:List[Json]):String = {
-	val cursor: HCursor = doc.hcursor
-	val listEither = cursor.get[List[String]]
-	val tokenList:List[String] = {
-		listEither match {
-			case Right(ls) => ls
-			case _ => null
-		}
-	}
 */
-
-
-// String Values
 
 val textUrnBase:String = "urn:cts:greekLit:tlg0007.tlg012"
 val citationScheme:String = "section/sentence"
