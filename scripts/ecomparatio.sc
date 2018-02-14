@@ -24,6 +24,10 @@ val citationScheme:String = "section/sentence"
 val groupName:String = "Plutarch"
 val workTitle:String = "Pericles"
 val textLang:String = "grc"
+val diffExemplarUrnComponent:String = "diffTokens"
+val primarySeparator:String = "#"
+
+val cexFilePath:String = "resources/cts-cex.txt"
 
 val cexHeader:String = """
 // A library demonstrating eComparatio data in CITE/CEX format
@@ -35,7 +39,7 @@ val cexHeader:String = """
 #!citelibrary
 name#demo
 urn#urn:cite2:cex:fufolio.2018_1:ecomparatioDemo
-license#CC Share Alike.  For details, see more info.
+license#CC Share Alike.  For details, see <https://github.com/Leipzig-Furman-Plutarch/pluperfct-utils>.
 """
 
 val cexCatalogHeader:String = """
@@ -69,6 +73,19 @@ def eitherListToListString(le:Either[io.circe.Error,List[String]]):List[String] 
 	ls
 }
 
+def textNameStringToVersionUrn(tn:List[String]):CtsUrn = {
+	 val versionComponentString:String = tn(1).replace(" ","")
+	 val versionUrn:CtsUrn = CtsUrn(s"${textUrnBase}.${versionComponentString}:")
+	 versionUrn
+}
+
+def textNameStringToExemplarUrn(tn:List[String]):CtsUrn = {
+	 val versionComponentString:String = tn(1).replace(" ","")
+	 val exemplarUrn:CtsUrn = CtsUrn(s"${textUrnBase}.${versionComponentString}.${diffExemplarUrnComponent}:")	 
+	 exemplarUrn
+}
+
+
 /* Process JSON file into CEX */
 
 val lines = Source.fromFile("resources/PeriklesFinal.json").getLines.toList
@@ -87,20 +104,31 @@ val textNamesList:List[List[String]] = textNamesListJson.map(tn => {
 	eitherListToListString(textNameEither)
 })
 var tempCexCatalog:String = s"${cexHeader}\n\n${cexCatalogHeader}"
+
+// Get Vector of Map["version"->CtsUrn,"exemplar"->CtsUrn]
+val corpusUrns:Vector[Map[String,CtsUrn]] = {
+	textNamesList.map( tn =>{
+	  	val vUrn = textNameStringToVersionUrn(tn)
+	  	val eUrn = textNameStringToExemplarUrn(tn)
+	  	val urnMap:Map[String,CtsUrn] = Map("version" -> vUrn, "exemplar" -> eUrn)
+	  	urnMap
+	} ).toVector
+}
+
 val tempCexCatalogEntries:String = textNamesList.map( tn => {
 	 val versionComponentString:String = tn(1).replace(" ","")
 	 val versionUrn:CtsUrn = CtsUrn(s"${textUrnBase}.${versionComponentString}:")
 	 val versionCitationScheme:String = citationScheme
-	 val exemplarUrn:CtsUrn = CtsUrn(s"${textUrnBase}.${versionComponentString}.diffTokens:")	 
+	 val exemplarUrn:CtsUrn = CtsUrn(s"${textUrnBase}.${versionComponentString}.${diffExemplarUrnComponent}:")	 
 	 val exemplarCitationScheme:String = s"${versionCitationScheme}/token"
 	 val versionLabel:String = s"${tn(1)} ${tn(2)} ${tn(3)}"
 	 val exemplarLabel:String = s"tokenized for comparison"
 	 var tempString:String = versionUrn.toString + '#'
 	 tempString = tempString + versionCitationScheme + '#'
-	 tempString = tempString +  groupName + '#' + versionLabel + "##true#" + textLang + "\n"
+	 tempString = tempString +  groupName + '#' + workTitle + '#' + versionLabel + "##true#" + textLang + "\n"
 	 tempString = tempString +  exemplarUrn.toString + '#'
 	 tempString = tempString +  exemplarCitationScheme + '#'
-	 tempString = tempString +  groupName + '#' + versionLabel + '#' 
+	 tempString = tempString +  groupName + '#' + workTitle + '#' + versionLabel + '#' 
 	 tempString = tempString +  exemplarLabel + "#true#" + textLang 
 	 tempString
 }).mkString("\n")
@@ -114,6 +142,7 @@ val allTextList:List[(List[(String)],Int)] = allTextListJson.map(atl => {
 	val textJsonEither = atl.as[List[String]]
 	eitherListToListString(textJsonEither)
 }).zipWithIndex
+
 // We want, for each token, the string, a pseudo-citation, and the index
 val pseudoCts:List[(List[(String,String,Int)],Int)] = {
 	allTextList.map( tt => {
@@ -139,9 +168,11 @@ Notes for the Future:
 	- Sections look like "1.", subsections look like "[1]"
 
 */
-def printPlutarchExemplars(pcts:List[(List[(String,String,Int)],Int)]):Unit = {
-	val pw = new PrintWriter(new File("resources/cts-cex.txt" ))
-	pw.write("****\nPlaceholder Data! Not a real CEX file!\n***\n")
+def ctsTextFromJson(pcts:List[(List[(String,String,Int)],Int)]):String = {
+	val sb = new StringBuilder()
+	sb.append(cexCatalog)
+	sb.append("\n\n")
+	sb.append("#!ctsdata\n")
 	var levelOne:Int = 0
 	var levelTwo:Int = 0
 	var textContent:String = ""
@@ -152,13 +183,14 @@ def printPlutarchExemplars(pcts:List[(List[(String,String,Int)],Int)]):Unit = {
 		textContent = ""
 		for (v <- t._1){
 			val txt:String = v._1
-			val wrk:String = v._2.split(":")(0)
+			//val wrk:String = v._2.split(":")(0)
+			val wrk:String = corpusUrns(v._2.split(":")(0).toInt)("version").toString
 			val tok:String = v._2.split(":")(1)
 		   val enum:Int = v._3	
 		   txt match {
 		   	case t if t.matches("""[0-9]+\.""") => {
 		   		if ( !(textContent.matches("""\s*"""))){
-				   	pw.write(s"${wrk}:${levelOne}.${levelTwo}\t${textContent}\n")
+				   	sb.append(s"${wrk}${levelOne}.${levelTwo}${primarySeparator}${textContent}\n")
 		   		} 
 			   	textContent = ""
 			   	levelOne = levelOne + 1
@@ -166,7 +198,7 @@ def printPlutarchExemplars(pcts:List[(List[(String,String,Int)],Int)]):Unit = {
 		   	}
 			   case t if t.matches("""\[[0-9]+\]""") => {
 		   		if ( !(textContent.matches("""\s*"""))){
-				   	pw.write(s"${wrk}:${levelOne}.${levelTwo}\t${textContent}\n")
+				   	sb.append(s"${wrk}${levelOne}.${levelTwo}${primarySeparator}${textContent}\n")
 				   }
 			   	textContent = ""
 		   		levelTwo = levelTwo + 1	
@@ -184,7 +216,7 @@ def printPlutarchExemplars(pcts:List[(List[(String,String,Int)],Int)]):Unit = {
 		levelTwo = 0
 		for (v <- t._1){
 			val txt:String = v._1
-			val wrk:String = v._2.split(":")(0)
+			val wrk:String = corpusUrns(v._2.split(":")(0).toInt)("exemplar").toString
 			val tok:String = v._2.split(":")(1)
 		   val enum:Int = v._3	
 		   txt match {
@@ -197,14 +229,29 @@ def printPlutarchExemplars(pcts:List[(List[(String,String,Int)],Int)]):Unit = {
 			   }
 				case t if t.matches(""" *""") =>
 				case _ => {
-					pw.write(s"${wrk}.tokens:${levelOne}.${levelTwo}.${tok}\t${txt}\n")	
+					sb.append(s"${wrk}${levelOne}.${levelTwo}.${tok}${primarySeparator}${txt}\n")	
 				}
 		   } 
 		} 
 	}	
+	val cexString:String = sb.toString
+	cexString
+}
+
+val eComparatioCEX = ctsTextFromJson(pseudoCts)
+
+def writeCEX(cex:String):Unit = {
+	val pw = new PrintWriter(new File(cexFilePath))
+	pw.write(cex)
 	pw.close
 }
 
-printPlutarchExemplars(pseudoCts)
+// Write CEX File
+writeCEX(eComparatioCEX)
+
+// Test it by loading cexFilePath into a Cite Library
+val cexData = Source.fromFile("resources/cts-cex.txt").getLines.mkString("\n")
+val library = CiteLibrary(cexData,"#",",")
+
 
 
