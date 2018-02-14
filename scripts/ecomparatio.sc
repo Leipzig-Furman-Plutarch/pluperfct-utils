@@ -27,6 +27,9 @@ val textLang:String = "grc"
 val diffExemplarUrnComponent:String = "diffTokens"
 val primarySeparator:String = "#"
 
+val levelOneCitationRegex:String = """[0-9]+\."""
+val levelTwoCitationRegex:String = """\[[0-9]+\]"""
+
 val cexFilePath:String = "resources/cts-cex.txt"
 
 val cexHeader:String = """
@@ -188,7 +191,7 @@ def ctsTextFromJson(pcts:List[(List[(String,String,Int)],Int)]):String = {
 			val tok:String = v._2.split(":")(1)
 		   val enum:Int = v._3	
 		   txt match {
-		   	case t if t.matches("""[0-9]+\.""") => {
+		   	case t if t.matches(levelOneCitationRegex) => {
 		   		if ( !(textContent.matches("""\s*"""))){
 				   	sb.append(s"${wrk}${levelOne}.${levelTwo}${primarySeparator}${textContent}\n")
 		   		} 
@@ -196,7 +199,7 @@ def ctsTextFromJson(pcts:List[(List[(String,String,Int)],Int)]):String = {
 			   	levelOne = levelOne + 1
 			   	levelTwo = 0
 		   	}
-			   case t if t.matches("""\[[0-9]+\]""") => {
+			   case t if t.matches(levelTwoCitationRegex) => {
 		   		if ( !(textContent.matches("""\s*"""))){
 				   	sb.append(s"${wrk}${levelOne}.${levelTwo}${primarySeparator}${textContent}\n")
 				   }
